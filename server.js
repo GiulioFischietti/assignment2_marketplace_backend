@@ -73,6 +73,24 @@ app.post('/signup', async (req, res) => {
 
 app.post('/login', async (req, res) => {
     const [user] = await db.query("select customer.id, user.name, user.password, user.username, user.image_url, customer.user_id, customer.address, customer.country, customer.phone from user INNER join customer on user.id = customer.user_id where user.username = '$username';".replace("$username", req.body.username))
+    if (user != []) {
+        try {
+            if (await bcrypt.compare(req.body.password, user[0].password))
+                res.send({ "success": true, data: user[0] })
+            else res.status(403).send({ "success": false, data: "Wrong username/password" })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
+
+app.post('/loginasmanager', async (req, res) => {
+    console.log("Hello")
+    const [user] = await db.query("select * from user INNER join manager on user.id = manager.user_id where user.username = '$username';".replace("$username", req.body.username))
     console.log(user);
     if (user != []) {
         try {
@@ -228,6 +246,21 @@ app.get('/orders', async (req, res) => {
         res.status(403).send({ success: false, data: "User not registered" });
     }
 })
+
+app.get('/managerorders', async (req, res) => {
+    const [orders] = await db.query("SELECT * FROM order_customer ORDER BY order_customer.order_date DESC LIMIT 100;")
+    if (orders != []) {
+        try {
+            res.send({ "success": true, data: orders })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
 app.get('/orderdetails', async (req, res) => {
     const [orders] = await db.query("SELECT product.id as product_id, product.category, product.price, product_order.total, product.image_url, product.name, order_customer.id as order_id, product_order.quantity FROM order_customer INNER JOIN product_order ON order_customer.id = product_order.order_id INNER JOIN product on product_order.product_id = product.id WHERE order_customer.customer_id = $customer_id and order_customer.id = $order_id;".replace("$customer_id", req.query.id).replace("$order_id", req.query.order_id))
     if (orders != []) {
@@ -292,8 +325,20 @@ app.get('/books', async (req, res) => {
 })
 
 
-app.get('/bookbyid', async (req, res) => {
-    const [books] = await db.query("SELECT * FROM product INNER JOIN book ON product.id = book.product_id WHERE book.product_id = $book_id".replace("$book_id", req.query.product_id))
+app.post('/updatebook', async (req, res) => {
+
+    const [books] = await db.query("UPDATE product AS p JOIN book AS b on p.id = b.product_id SET p.name = '$name',p.brand = '$brand', p.short_description = '$short_description', p.description = '$description', p.price = $price,p.stock = $stock,  b.summary = '$summary', b.language = '$language', b.language = '$language', b.n_pages = $n_pages WHERE b.product_id = $product_id"
+        .replace("$name", req.body.name)
+        .replace("$short_description", req.body.short_description)
+        .replace("$description", req.body.description)
+        .replace("$price", req.body.price)
+        .replace("$n_pages", req.body.n_pages)
+        .replace("$language", req.body.language)
+        .replace("$summary", req.body.summary)
+        .replace("$product_id", req.body.product_id)
+        .replace("$stock", req.body.stock)
+        .replace("$brand", req.body.brand))
+    console.log(books)
     if (books != []) {
         try {
             res.send({ "success": true, data: books[0] })
@@ -306,7 +351,76 @@ app.get('/bookbyid', async (req, res) => {
         res.status(403).send({ success: false, data: "User not registered" });
     }
 })
+
+app.post('/updatebeer', async (req, res) => {
+    console.log(req.body)
+    const [beers] = await db.query("UPDATE product AS p JOIN beer AS b on p.id = b.product_id SET p.name = '$name',p.brand = '$brand', p.short_description = '$short_description', p.description = '$description', p.price = $price, p.stock = $stock, b.alcohol_percentage = $alcohol_percentage, b.volume_ml = $volume_ml WHERE b.product_id = '$product_id'"
+        .replace("$name", req.body.name)
+        .replace("$short_description", req.body.short_description)
+        .replace("$description", req.body.description)
+        .replace("$price", req.body.price)
+        .replace("$alcohol_percentage", req.body.alcohol_percentage)
+        .replace("$volume_ml", req.body.volume_ml)
+        .replace("$product_id", req.body.product_id)
+        .replace("$stock", req.body.stock)
+        .replace("$brand", req.body.brand))
+    if (beers != []) {
+        try {
+            res.send({ "success": true, data: beers[0] })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
+
+app.post('/updatemonitor', async (req, res) => {
+    const [monitors] = await db.query("UPDATE product AS p JOIN monitor AS b on p.id = b.product_id SET p.name = '$name',p.brand = '$brand', p.short_description = '$short_description', p.description = '$description', p.price = $price,p.stock = $stock,  b.refresh_rate = $refresh_rate, b.resolution = '$resolution', b.special_features = '$special_features' WHERE b.product_id = '$product_id'"
+        .replace("$name", req.body.name)
+        .replace("$short_description", req.body.short_description)
+        .replace("$description", req.body.description)
+        .replace("$price", req.body.price)
+        .replace("$refresh_rate", req.body.refresh_rate)
+        .replace("$resolution", req.body.resolution)
+        .replace("$special_features", req.body.special_features)
+        .replace("$product_id", req.body.product_id)
+        .replace("$stock", req.body.stock)
+        .replace("$brand", req.body.brand))
+    if (monitors != []) {
+        try {
+            res.send({ "success": true, data: monitors[0] })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
+
+
+app.get('/bookbyid', async (req, res) => {
+    const [books] = await db.query("SELECT * FROM product INNER JOIN book ON product.id = book.product_id WHERE book.product_id = $book_id".replace("$book_id", req.query.product_id))
+    console.log(req.query)
+    if (books != []) {
+        try {
+            res.send({ "success": true, data: books[0] })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
+
 app.get('/beerbyid', async (req, res) => {
+    console.log(req.query)
     const [beers] = await db.query("SELECT * FROM product INNER JOIN beer ON product.id = beer.product_id WHERE beer.product_id = $beer_id".replace("$beer_id", req.query.product_id))
     if (beers != []) {
         try {
@@ -320,7 +434,9 @@ app.get('/beerbyid', async (req, res) => {
         res.status(403).send({ success: false, data: "User not registered" });
     }
 })
+
 app.get('/monitorbyid', async (req, res) => {
+    console.log(req.query)
     const [monitors] = await db.query("SELECT * FROM product INNER JOIN monitor ON product.id = monitor.product_id WHERE monitor.product_id = $monitor_id".replace("$monitor_id", req.query.product_id))
     if (monitors != []) {
         try {
@@ -404,10 +520,30 @@ app.get('/beersbybrand', async (req, res) => {
     }
 })
 
+app.get('/productsbycategory', async (req, res) => {
+    const [categories] = await db.query("SELECT DISTINCT product.category FROM product GROUP BY product.category")
+    if (categories != []) {
+        try {
+            var products = []
+            for (let i = 0; i < categories.length; i++) {
+                console.log("SELECT * FROM product WHERE product.category = '$category'".replace("$category", categories[i].category))
+                const [products_by_category] = await db.query("SELECT * FROM product WHERE product.category='$category'".replace(/\$category/g, categories[i].category))
+                products.push({ "category": categories[i].category, "products": products_by_category })
+            }
+            res.send({ "success": true, data: products })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
 
 
 app.post('/searchproducts', async (req, res) => {
-    const [products] = await db.query("SELECT * FROM product WHERE name LIKE '%$keyword%'".replace("$keyword", req.body.keyword != null ? req.body.keyword : ""))
+    const [products] = await db.query("SELECT id as product_id, name, brand, image_url, category, price, short_description, description FROM product WHERE name LIKE '%$keyword%'".replace("$keyword", req.body.keyword != null ? req.body.keyword : ""))
     if (products != []) {
         try {
 
@@ -424,7 +560,7 @@ app.post('/searchproducts', async (req, res) => {
 
 app.post('/createorder', async (req, res) => {
     try {
-       
+
         var rows = await db.query("INSERT INTO order_customer (customer_id, order_date, shipping_country, shipping_address, payment_type, status, total) VALUES ('$customer_id', '$order_date', '$shipping_country', '$shipping_address', '$payment_type', '$status', '$total');"
             .replace("$customer_id", req.body.id)
             .replace("$order_date", (new Date()).toLocaleString())
@@ -454,7 +590,7 @@ app.post('/createorder', async (req, res) => {
         }
         client.set("cust:$cust_id:cart_ids".replace("$cust_id", req.body.id), JSON.stringify([]))
         res.send({ "success": true, data: null })
-    
+
     } catch (error) {
         console.log(error)
         res.status(500).send()
