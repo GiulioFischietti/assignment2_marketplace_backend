@@ -72,6 +72,7 @@ app.post('/signup', async (req, res) => {
 })
 
 app.post('/login', async (req, res) => {
+    console.log("helo")
     const [user] = await db.query("select customer.id, user.name, user.password, user.username, user.image_url, customer.user_id, customer.address, customer.country, customer.phone from user INNER join customer on user.id = customer.user_id where user.username = '$username';".replace("$username", req.body.username))
     if (user != []) {
         try {
@@ -85,6 +86,16 @@ app.post('/login', async (req, res) => {
     }
     else {
         res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
+app.post('/updatestatusorder', async (req, res) => {
+
+    try {
+        db.query("UPDATE order_customer SET status = '$status' WHERE id = $id;".replace("$status", req.body.status).replace("$id", req.body.id))
+        res.status(200).send({ success: true })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
     }
 })
 
@@ -276,7 +287,7 @@ app.get('/orderdetails', async (req, res) => {
     }
 })
 app.get('/beers', async (req, res) => {
-    const [beers] = await db.query("SELECT * FROM product INNER JOIN beer ON product.id = beer.product_id LIMIT $limit".replace("$limit", req.body.limit != null ? req.body.limit : 10))
+    const [beers] = await db.query("SELECT * FROM product INNER JOIN beer ON product.id = beer.product_id order by product.id desc LIMIT $limit".replace("$limit", req.body.limit != null ? req.body.limit : 10))
     if (beers != []) {
         try {
 
@@ -292,7 +303,7 @@ app.get('/beers', async (req, res) => {
 })
 
 app.get('/monitors', async (req, res) => {
-    const [monitors] = await db.query("SELECT * FROM product INNER JOIN monitor ON product.id = monitor.product_id LIMIT $limit".replace("$limit", req.body.limit != null ? req.body.limit : 10))
+    const [monitors] = await db.query("SELECT * FROM product INNER JOIN monitor ON product.id = monitor.product_id order by product.id desc LIMIT $limit".replace("$limit", req.body.limit != null ? req.body.limit : 10))
     if (monitors != []) {
         try {
 
@@ -376,7 +387,93 @@ app.post('/updatebeer', async (req, res) => {
         res.status(403).send({ success: false, data: "User not registered" });
     }
 })
+app.post('/createbeer', async (req, res) => {
+    console.log(req.body)
+    const [createdProduct] = await db.query("INSERT INTO product (category, name, brand, short_description, description,price,stock) VALUES ('beer', '$name', '$brand', '$short_description', '$description', $price, $stock)"
+        .replace("$name", req.body.name)
+        .replace("$short_description", req.body.short_description)
+        .replace("$description", req.body.description)
+        .replace("$price", req.body.price)
+        .replace("$stock", req.body.stock)
+        .replace("$brand", req.body.brand))
 
+    const [createdBeer] = await db.query("INSERT INTO beer (product_id, volume_ml, alcohol_percentage) VALUES ($product_id, $volume_ml, $alcohol_percentage)"
+        .replace("$product_id", createdProduct.insertId)
+        .replace("$volume_ml", req.body.volume_ml)
+        .replace("$alcohol_percentage", req.body.alcohol_percentage))
+
+
+    if (createdBeer != []) {
+        try {
+            res.send({ "success": true, data: createdBeer[0] })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
+app.post('/createbook', async (req, res) => {
+    console.log(req.body)
+    const [createdProduct] = await db.query("INSERT INTO product (category, name, brand, short_description, description,price,stock) VALUES ('book', '$name', '$brand', '$short_description', '$description', $price, $stock)"
+        .replace("$name", req.body.name)
+        .replace("$short_description", req.body.short_description)
+        .replace("$description", req.body.description)
+        .replace("$price", req.body.price)
+        .replace("$stock", req.body.stock)
+        .replace("$brand", req.body.brand))
+
+    const [createdBook] = await db.query("INSERT INTO book (product_id, summary, n_pages) VALUES ($product_id, '$summary', $n_pages)"
+        .replace("$product_id", createdProduct.insertId)
+        .replace("$summary", req.body.summary)
+        .replace("$n_pages", req.body.n_pages))
+
+
+    if (createdBook != []) {
+        try {
+            res.send({ "success": true, data: createdBook[0] })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
+
+
+app.post('/createmonitor', async (req, res) => {
+    console.log(req.body)
+    const [createdProduct] = await db.query("INSERT INTO product (category, name, brand, short_description, description,price,stock) VALUES ('monitor', '$name', '$brand', '$short_description', '$description', $price, $stock)"
+        .replace("$name", req.body.name)
+        .replace("$short_description", req.body.short_description)
+        .replace("$description", req.body.description)
+        .replace("$price", req.body.price)
+        .replace("$stock", req.body.stock)
+        .replace("$brand", req.body.brand))
+
+    const [createdMonitor] = await db.query("INSERT INTO monitor (product_id, refresh_rate, special_features, screen_size, resolution) VALUES ($product_id, $refresh_rate, '$special_features', $screen_size, '$resolution')"
+        .replace("$product_id", createdProduct.insertId)
+        .replace("$refresh_rate", req.body.refresh_rate)
+        .replace("$special_features", req.body.special_features)
+        .replace("$resolution", req.body.resolution)
+        .replace("$screen_size", req.body.screen_size))
+    console.log(createdMonitor)
+    if (createdMonitor != []) {
+        try {
+            res.send({ "success": true, data: createdMonitor[0] })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(403).send({ success: false, data: "User not registered" });
+    }
+})
 app.post('/updatemonitor', async (req, res) => {
     const [monitors] = await db.query("UPDATE product AS p JOIN monitor AS b on p.id = b.product_id SET p.name = '$name',p.brand = '$brand', p.short_description = '$short_description', p.description = '$description', p.price = $price,p.stock = $stock,  b.refresh_rate = $refresh_rate, b.resolution = '$resolution', b.special_features = '$special_features' WHERE b.product_id = '$product_id'"
         .replace("$name", req.body.name)
@@ -436,8 +533,8 @@ app.get('/beerbyid', async (req, res) => {
 })
 
 app.get('/monitorbyid', async (req, res) => {
-    console.log(req.query)
     const [monitors] = await db.query("SELECT * FROM product INNER JOIN monitor ON product.id = monitor.product_id WHERE monitor.product_id = $monitor_id".replace("$monitor_id", req.query.product_id))
+    console.log(req.query)
     if (monitors != []) {
         try {
             res.send({ "success": true, data: monitors[0] })
@@ -526,8 +623,8 @@ app.get('/productsbycategory', async (req, res) => {
         try {
             var products = []
             for (let i = 0; i < categories.length; i++) {
-                console.log("SELECT * FROM product WHERE product.category = '$category'".replace("$category", categories[i].category))
-                const [products_by_category] = await db.query("SELECT * FROM product WHERE product.category='$category'".replace(/\$category/g, categories[i].category))
+                console.log("SELECT * FROM product WHERE product.category = '$category' orderby id desc".replace("$category", categories[i].category))
+                const [products_by_category] = await db.query("SELECT * FROM product WHERE product.category='$category' order by product.id desc".replace(/\$category/g, categories[i].category))
                 products.push({ "category": categories[i].category, "products": products_by_category })
             }
             res.send({ "success": true, data: products })
