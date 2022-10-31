@@ -50,16 +50,39 @@ app.get('/', async (req, res) => {
         res.status(500).send({ "error": error })
     }
 })
-
-app.post('/signup', async (req, res) => {
+app.post('/signupasamanager', async (req, res) => {
     try {
         const [users] = await db.query("select * from user where username = '" + req.body.username + "'")
-        console.log(users)
+    
         if (users.length == 0) {
 
             const hashedPassword = await bcrypt.hash(req.body.password, 10)
             const newUser = await db.query("INSERT INTO user (name, username, password) values ('" + req.body.name + "', '" + req.body.username + "', '" + hashedPassword + "');")
-            const [user] = await db.query("select name, username from user where username = '" + req.body.username + "'")
+            const newManager = await db.query("INSERT INTO manager (user_id) values ('"  + newUser[0].insertId +  "');")
+            
+            const [user] = await db.query("select * from user INNER join manager on user.id = manager.user_id where user.username = '$username';".replace("$username", req.body.username))
+            res.status(200).send({ success: true, data: user[0] });
+        }
+        else {
+            console.log("Manager already registered")
+            res.status(500).send({ success: false, data: "Username already registered" })
+        }
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ success: false, data: error })
+    }
+})
+app.post('/signup', async (req, res) => {
+    try {
+        const [users] = await db.query("select * from user where username = '" + req.body.username + "'")
+    
+        if (users.length == 0) {
+
+            const hashedPassword = await bcrypt.hash(req.body.password, 10)
+            const newUser = await db.query("INSERT INTO user (name, username, password) values ('" + req.body.name + "', '" + req.body.username + "', '" + hashedPassword + "');")
+            const newCustomer = await db.query("INSERT INTO customer (address, phone, user_id) values ('" + req.body.address + "', '" + req.body.phone + "', '" + newUser[0].insertId +  "');")
+            
+            const [user] = await db.query("select customer.id, user.name, user.password, user.username, user.image_url, customer.user_id, customer.address, customer.country, customer.phone from user INNER join customer on user.id = customer.user_id where user.username = '$username';".replace("$username", req.body.username))
             res.status(200).send({ success: true, data: user[0] });
         }
         else {
@@ -102,7 +125,6 @@ app.post('/updatestatusorder', async (req, res) => {
 app.post('/loginasmanager', async (req, res) => {
     console.log("Hello")
     const [user] = await db.query("select * from user INNER join manager on user.id = manager.user_id where user.username = '$username';".replace("$username", req.body.username))
-    console.log(user);
     if (user != []) {
         try {
             if (await bcrypt.compare(req.body.password, user[0].password))
@@ -692,4 +714,95 @@ app.post('/createorder', async (req, res) => {
         console.log(error)
         res.status(500).send()
     }
+})
+
+app.get('/productanalytics', async (req, res) => {
+
+    try {
+        const [beer_analytics] = await db.query(`
+    SELECT COUNT(product_order.product_id) AS product_count, beer.product_id, name, image_url, category, price 
+    FROM marketplace.order_customer 
+    join product_order on product_order.order_id = order_customer.id 
+    join product on product_order.product_id = product.id  
+    join beer on product.id = beer.product_id  
+    where (order_date > '$start_date' and order_date < '$end_date') 
+    group by product_order.product_id 
+    order by product_count $order
+    LIMIT $limit;`.replace("$order", req.query.sorting != null ? req.query.sorting : 'desc').replace("$limit", req.query.limit != null ? req.query.limit : 10).replace("$start_date", req.query.start_date).replace("$end_date", req.query.end_date))
+
+        const [book_analytics] = await db.query(`
+    SELECT COUNT(product_order.product_id) AS product_count, book.product_id, name, image_url, category, price 
+    FROM marketplace.order_customer 
+    join product_order on product_order.order_id = order_customer.id 
+    join product on product_order.product_id = product.id  
+    join book on product.id = book.product_id  
+    where (order_date > '$start_date' and order_date < '$end_date') 
+    group by product_order.product_id 
+    order by product_count $order
+    LIMIT $limit;`.replace("$order", req.query.sorting != null ? req.query.sorting : 'desc').replace("$limit", req.query.limit != null ? req.query.limit : 10).replace("$start_date", req.query.start_date).replace("$end_date", req.query.end_date))
+
+        const [monitor_analytics] = await db.query(`
+    SELECT COUNT(product_order.product_id) AS product_count, monitor.product_id, name, image_url, category, price 
+    FROM marketplace.order_customer 
+    join product_order on product_order.order_id = order_customer.id 
+    join product on product_order.product_id = product.id  
+    join monitor on product.id = monitor.product_id  
+    where (order_date > '$start_date' and order_date < '$end_date') 
+    group by product_order.product_id 
+    order by product_count $order
+    LIMIT $limit;`.replace("$order", req.query.sorting != null ? req.query.sorting : 'desc').replace("$limit", req.query.limit != null ? req.query.limit : 10).replace("$start_date", req.query.start_date).replace("$end_date", req.query.end_date))
+
+        res.send({ "success": true, data: { "beers": beer_analytics, "books": book_analytics, "monitors": monitor_analytics } })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
+    }
+
+})
+
+
+app.get('/customeranalytics', async (req, res) => {
+
+    try {
+       
+        const [users] = await db.query(`
+        SELECT COUNT(order_customer.customer_id) AS order_count, order_customer.customer_id, name, image_url
+        FROM marketplace.order_customer 
+        join customer on order_customer.customer_id = customer.id
+        join user on customer.user_id = user.id
+        where (order_date > '$start_date' and order_date < '$end_date') 
+        group by order_customer.customer_id 
+        order by order_count $order
+        LIMIT $limit;`.replace("$order", req.query.sorting != null ? req.query.sorting : 'desc').replace("$limit", req.query.limit != null ? req.query.limit : 5).replace("$start_date", req.query.start_date).replace("$end_date", req.query.end_date))
+
+        res.send({ "success": true, data: { "users": users } })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
+    }
+
+})
+
+
+
+app.get('/expencesanalytics', async (req, res) => {
+
+    try {
+       
+        const [users] = await db.query(`
+        SELECT SUM(order_customer.total) AS order_total, order_customer.customer_id, name, image_url
+        FROM marketplace.order_customer 
+        join customer on order_customer.customer_id = customer.id
+        join user on customer.user_id = user.id
+        where (order_date > '$start_date' and order_date < '$end_date') 
+        group by order_customer.customer_id 
+        order by order_total $order
+        LIMIT $limit;`.replace("$order", req.query.sorting != null ? req.query.sorting : 'desc').replace("$limit", req.query.limit != null ? req.query.limit : 5).replace("$start_date", req.query.start_date).replace("$end_date", req.query.end_date))
+
+        res.send({ "success": true, data: { "users": users } })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
+    }
+
 })
