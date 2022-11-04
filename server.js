@@ -20,7 +20,7 @@ const {
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb' }));
-app.listen(3000, () => console.log("Server started"))
+app.listen(3000, "0.0.0.0", ()=>console.log("Server started"));
 
 const client = redis.createClient({
     socket: {
@@ -156,14 +156,19 @@ app.post('/updateuser', async (req, res) => {
 app.get('/getcart', async (req, res) => {
     try {
         var cartItems = []
-        var cart_ids = JSON.parse(await client.get("cust:$cust_id:cart_ids".replace("$cust_id", req.query.id)))
-        if (cart_ids != null) {
-            for (let i = 0; i < cart_ids.length; i++) {
-                var cartItem = JSON.parse(await client.get("cust:$cust_id:$cart_item_index:cart_item".replace("$cust_id", req.query.id).replace("$cart_item_index", cart_ids[i])))
-                // console.log("cust:$cust_id:$cart_item_index:cart_item".replace("$cust_id", req.query.id).replace("$cart_item_index", cart_ids[i]))
-                var cartItemQuantity = await client.get("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.query.id).replace("$cart_item_index", cart_ids[i]))
+        var cart_product_ids = JSON.parse(await client.get("cust:$cust_id:cart_product_ids".replace("$cust_id", req.query.id)))
+        console.log("cust:$cust_id:cart_product_ids".replace("$cust_id", req.query.id))
+        console.log(cart_product_ids)
+        if (cart_product_ids != null) {
+            for (let i = 0; i < cart_product_ids.length; i++) {
+                // console.log("cust:$cust_id:$cart_item_index:cart_item".replace("$cust_id", req.query.id).replace("$cart_item_index", cart_product_ids[i]))
+                var cartItemQuantity = await client.get("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.query.id).replace("$cart_item_index", cart_product_ids[i]))
                 // console.log(cartItemQuantity)
-                var cartItemProductId = await client.get("cust:$cust_id:$cart_item_index:product_id".replace("$cust_id", req.query.id).replace("$cart_item_index", cart_ids[i]))
+                var cartItemProductId =  cart_product_ids[i]
+                
+                var cartItem = JSON.parse(await client.get("prod:$product_id".replace("$product_id", cartItemProductId)))
+
+                
                 cartItem.quantity = parseInt(cartItemQuantity)
                 cartItem.product_id = parseInt(cartItemProductId)
                 cartItems.push(cartItem)
@@ -176,9 +181,10 @@ app.get('/getcart', async (req, res) => {
     }
 })
 
-// removal can be simplified by removing by id: if quantity==0 pop that id from cart_ids, otherwise quantity-- where cust:$user_id:$cart_item_id = id
+// removal can be simplified by removing by id: if quantity==0 pop that id from cart_product_ids, otherwise quantity-- where cust:$user_id:$cart_item_id = id
 app.post('/removefromcart', async (req, res) => {
     try {
+        console.log("Removing " + req.body.id)
 
         client.get("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id)).then(async (reply) => {
             if (reply - 1 == 0) {
@@ -186,10 +192,10 @@ app.post('/removefromcart', async (req, res) => {
                 client.del("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id))
                 client.del("cust:$cust_id:$cart_item_index:cart_item".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id))
 
-                var currentIds = JSON.parse(await client.get("cust:$cust_id:cart_ids".replace("$cust_id", req.body.user_id)))
+                var currentIds = JSON.parse(await client.get("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.user_id)))
                 var index = currentIds.indexOf(req.body.id);
                 currentIds.splice(index, 1);
-                client.set("cust:$cust_id:cart_ids".replace("$cust_id", req.body.user_id), JSON.stringify(currentIds))
+                client.set("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.user_id), JSON.stringify(currentIds))
 
             } else {
                 client.set("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id), (parseInt(reply) - 1))
@@ -204,14 +210,16 @@ app.post('/removefromcart', async (req, res) => {
 
 app.post('/removeallitemfromcart', async (req, res) => {
     try {
+        
         client.del("cust:$cust_id:$cart_item_index:product_id".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id))
         client.del("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id))
         client.del("cust:$cust_id:$cart_item_index:cart_item".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id))
 
-        var currentIds = JSON.parse(await client.get("cust:$cust_id:cart_ids".replace("$cust_id", req.body.user_id)))
+        var currentIds = JSON.parse(await client.get("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.user_id)))
+
         var index = currentIds.indexOf(req.body.id);
         currentIds.splice(index, 1);
-        client.set("cust:$cust_id:cart_ids".replace("$cust_id", req.body.user_id), JSON.stringify(currentIds))
+        client.set("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.user_id), JSON.stringify(currentIds))
 
 
         res.status(200).send({ data: null })
@@ -220,17 +228,24 @@ app.post('/removeallitemfromcart', async (req, res) => {
         res.status(500).send()
     }
 })
+
 app.post('/addtocart', async (req, res) => {
     try {
-
-        var cart_max_index = await client.get("cust:$user_id:cart_max_index".replace("$user_id", req.body.user_id))
-        var currentIds = JSON.parse(await client.get("cust:$cust_id:cart_ids".replace("$cust_id", req.body.user_id)))
-
-        if (currentIds != null && cart_max_index != null) {
+        
+        var currentIds = JSON.parse(await client.get("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.user_id)))
+        
+        var product_in_redis = false;
+        product_in_redis = await client.get("prod:$product_id".replace("$product_id", req.body.product_id))
+        
+        if(!product_in_redis) {
+            client.set("prod:$product_id".replace("$product_id", req.body.product_id), JSON.stringify(req.body))
+        }
+        
+        if (currentIds != null) {
             var currentIdsCopy = [...currentIds]
             // console.log(currentIds)
             // console.log(cart_max_index)
-            var cart_max_index = parseInt(cart_max_index)
+            // var cart_max_index = parseInt(cart_max_index)
             for (let i = 0; i <= currentIds.length; i++) {
                 var productInCart = ((await client.get("cust:$cust_id:$cart_item_index:product_id".replace("$cust_id", req.body.user_id).replace("$cart_item_index", currentIds[i]))) == req.body.product_id)
                 if (productInCart) {
@@ -241,21 +256,16 @@ app.post('/addtocart', async (req, res) => {
                 }
             }
             if (!productInCart) {
-                currentIdsCopy.push(cart_max_index + 1)
-                req.body.id = cart_max_index + 1
-                client.set("cust:$cust_id:cart_ids".replace("$cust_id", req.body.user_id), JSON.stringify(currentIdsCopy))
-                client.set("cust:$cust_id:$cart_max_index:quantity".replace("$cart_max_index", cart_max_index + 1).replace("$cust_id", req.body.user_id), 1)
-                client.set("cust:$cust_id:$cart_max_index:product_id".replace("$cart_max_index", cart_max_index + 1).replace("$cust_id", req.body.user_id), req.body.product_id)
-                client.set("cust:$cust_id:cart_max_index".replace("$cust_id", req.body.user_id), cart_max_index + 1)
-                client.set("cust:$cust_id:$cart_max_index:cart_item".replace("$cart_max_index", cart_max_index + 1).replace("$cust_id", req.body.user_id), JSON.stringify(req.body))
+                currentIdsCopy.push(req.body.product_id)
+                // req.body.id = req.body.product_id
+                client.set("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.user_id), JSON.stringify(currentIdsCopy))
+                client.set("cust:$cust_id:$cart_item_index:quantity".replace("$cart_item_index", req.body.product_id).replace("$cust_id", req.body.user_id), 1)
+                client.set("cust:$cust_id:$cart_item_index:product_id".replace("$cart_item_index", req.body.product_id).replace("$cust_id", req.body.user_id), req.body.product_id)
             }
         } else {
-            req.body.id = 1
-            client.set("cust:$cust_id:cart_ids".replace("$cust_id", req.body.user_id), JSON.stringify([1]))
-            client.set("cust:$cust_id:$cart_max_index:product_id".replace("$cart_max_index", cart_max_index + 1).replace("$cust_id", req.body.user_id), req.body.product_id)
-            client.set("cust:$cust_id:1:quantity".replace("$cust_id", req.body.user_id), 1)
-            client.set("cust:$cust_id:cart_max_index".replace("$cust_id", req.body.user_id), 1)
-            client.set("cust:$cust_id:1:cart_item".replace("$cart_max_index", cart_max_index + 1).replace("$cust_id", req.body.user_id), JSON.stringify(req.body))
+            client.set("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.user_id), JSON.stringify([req.body.product_id]))
+            client.set("cust:$cust_id:$cart_item_index:product_id".replace("$cart_item_index", req.body.product_id).replace("$cust_id", req.body.user_id), req.body.product_id)
+            client.set("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.product_id), 1)
         }
         res.status(200).send({ data: null })
     } catch (error) {
@@ -266,6 +276,7 @@ app.post('/addtocart', async (req, res) => {
 
 
 app.get('/orders', async (req, res) => {
+    console.log("test")
     const [orders] = await db.query("SELECT * FROM order_customer where order_customer.customer_id = $customer_id ORDER BY order_customer.order_date DESC;".replace("$customer_id", req.query.id))
     if (orders != []) {
         try {
@@ -341,7 +352,7 @@ app.get('/monitors', async (req, res) => {
 })
 
 app.get('/books', async (req, res) => {
-    const [books] = await db.query("SELECT * FROM product INNER JOIN book ON product.id = book.product_id LIMIT $limit".replace("$limit", req.body.limit != null ? req.body.limit : 10))
+    const [books] = await db.query("SELECT * FROM product INNER JOIN book ON product.id = book.product_id order by product.id desc LIMIT $limit".replace("$limit", req.body.limit != null ? req.body.limit : 10))
     console.log("SELECT * FROM product INNER JOIN book ON product.id = book.product_id LIMIT $limit".replace("$limit", req.body.limit != null ? req.body.limit : 10))
     if (books != []) {
         try {
@@ -700,14 +711,14 @@ app.post('/createorder', async (req, res) => {
             db.query("UPDATE product SET stock = stock - $quantity WHERE id = $product_id".replace("$product_id", req.body.product_orders[i].product_id).replace("$quantity", req.body.product_orders[i].quantity))
         }
 
-        var currentIds = JSON.parse(await client.get("cust:$cust_id:cart_ids".replace("$cust_id", req.body.id)))
+        var currentIds = JSON.parse(await client.get("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.id)))
 
         for (let i = 0; i < currentIds.length; i++) {
             client.del("cust:$cust_id:$cart_item_index:product_id".replace("$cust_id", req.body.id).replace("$cart_item_index", currentIds[i]))
             client.del("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.body.id).replace("$cart_item_index", currentIds[i]))
             client.del("cust:$cust_id:$cart_item_index:cart_item".replace("$cust_id", req.body.id).replace("$cart_item_index", currentIds[i]))
         }
-        client.set("cust:$cust_id:cart_ids".replace("$cust_id", req.body.id), JSON.stringify([]))
+        client.set("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.id), JSON.stringify([]))
         res.send({ "success": true, data: null })
 
     } catch (error) {
