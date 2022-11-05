@@ -1,7 +1,8 @@
-var service = require('../services/orderService');
+const orderService = require('../services/orderService');
+const cartService = require('../services/cartService')
 
 const getOrdersOfManager = async (req, res) => {
-    const [orders] = await service.getOrdersOfManagerData(req)
+    const [orders] = await orderService.getOrdersOfManagerData(req)
         try {
             res.send({ "success": true, data: orders })
         } catch (error) {
@@ -12,7 +13,7 @@ const getOrdersOfManager = async (req, res) => {
 
 const updateStatusOrder = async (req, res) => {
     try {
-        await service.updateStatusOrderData(req)
+        await orderService.updateStatusOrderData(req)
         res.status(200).send({ success: true })
     } catch (error) {
         console.log(error)
@@ -22,7 +23,7 @@ const updateStatusOrder = async (req, res) => {
 
 const getOrdersOfUser = async (req, res) => {
 
-    const [orders] = await service.getOrdersOfUserData(req)
+    const [orders] = await orderService.getOrdersOfUserData(req)
     if (orders != []) {
         try {
             res.send({ "success": true, data: orders })
@@ -38,7 +39,7 @@ const getOrdersOfUser = async (req, res) => {
 
 const getOrderDetails = async (req, res) => {
     try {
-        const [orders] = await service.getOrderDetailsData(req)
+        const [orders] = await orderService.getOrderDetailsData(req)
         res.send({ "success": true, data: orders })
     } catch (error) {
         console.log(error)
@@ -46,10 +47,29 @@ const getOrderDetails = async (req, res) => {
 
     }
 }
+
+const createOrder = async (req, res) => {
+    try {
+        orderService.createOrderData(req)
+        var currentIds = await cartService.getCartProductIds(req.body.id)
+        for (let i = 0; i < currentIds.length; i++) {
+            cartService.deleteCartProduct(req.body.id, currentIds[i])
+        }
+        cartService.updateCartProductIds(req.body.id, [])
+        
+        res.send({ "success": true, data: null })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
+    }
+}
+
+
 module.exports = {
     getOrdersOfManager,
     updateStatusOrder,
     getOrdersOfUser,
     getOrderDetails,
+    createOrder,
 
 }

@@ -26,19 +26,18 @@ const getCartProductInfo = async (req, cart_product_id) => {
     }
 }
 
-const deleteCartProduct = async (req) => {
+const deleteCartProduct = async (user_id, product_id) => {
     try {
-        redisClient.del("cust:$cust_id:$cart_item_index:product_id".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id))
-        redisClient.del("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id))
-        redisClient.del("cust:$cust_id:$cart_item_index:cart_item".replace("$cust_id", req.body.user_id).replace("$cart_item_index", req.body.id))
+        redisClient.del("cust:$cust_id:$cart_item_index:product_id".replace("$cust_id", user_id).replace("$cart_item_index", product_id))
+        redisClient.del("cust:$cust_id:$cart_item_index:quantity".replace("$cust_id", user_id).replace("$cart_item_index", product_id))
     } catch (error) {
         console.log(error)
     }
 }
 
-const updateCartProductIds = async (req, currentIds) => {
+const updateCartProductIds = async (user_id, currentIds) => {
     try {
-        return await redisClient.set("cust:$cust_id:cart_product_ids".replace("$cust_id", req.body.user_id), JSON.stringify(currentIds))
+        return await redisClient.set("cust:$cust_id:cart_product_ids".replace("$cust_id", user_id), JSON.stringify(currentIds))
     } catch (error) {
         console.log(error)
     }
@@ -90,10 +89,10 @@ module.exports = {
     getCartProductInfo,
 
     deleteCartProduct,
-    
+
     updateCartProductIds,
     updateCartQuantity,
-    
+
     getProductById,
     addProductInRedis,
 

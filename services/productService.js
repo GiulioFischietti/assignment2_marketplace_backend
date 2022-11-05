@@ -232,6 +232,21 @@ const createMonitorData = async (req) => {
         console.log(error)
     }
 }
+
+
+const searchProductsData = async (req) => {
+    try {
+        const [response] = await mysqlClient.query("SELECT id as product_id, name, brand, image_url, category, price, short_description, description FROM product WHERE name LIKE '%$keyword%'".replace("$keyword", req.body.keyword != null ? req.body.keyword : ""))
+        return response
+    } catch (error) {
+        console.log(error)
+    }
+
+}
+
+
+
+
 module.exports = {
     updateBookData,
     updateBeerData,
@@ -261,6 +276,8 @@ module.exports = {
     createBookData,
     createMonitorData,
 
+    searchProductsData,
+    
 
 
 }

@@ -228,6 +228,21 @@ const createBook = async (req, res) => {
     }
 }
 
+const searchProducts = async (req, res) => {
+    const products = await service.searchProductsData(req)
+    if (products != []) {
+        try {
+            res.send({ "success": true, data: products })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send()
+        }
+    }
+    else {
+        res.status(200).send({ success: false, data: "No products found" });
+    }
+}
+
 module.exports = {
     updateBook,
     updateBeer,
@@ -249,6 +264,8 @@ module.exports = {
 
     createBeer,
     createBook,
-    createMonitor
+    createMonitor,
+
+    searchProducts
 
 }

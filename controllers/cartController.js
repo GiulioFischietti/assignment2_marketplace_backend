@@ -27,11 +27,11 @@ const removeFromCart = async (req, res) => {
     try {
         var cartItemQuantity = await service.getCartProductQuantity(req.body.user_id, req.body.id)
         if (cartItemQuantity - 1 == 0) {
-            service.deleteCartProduct(req)
+            service.deleteCartProduct(req.body.user_id, req.body.id)
             var currentIds = await service.getCartProductIds(req.body.user_id)
             var index = currentIds.indexOf(req.body.id);
             currentIds.splice(index, 1);
-            service.updateCartProductIds(req, currentIds)
+            service.updateCartProductIds(req.body.user_id, currentIds)
         } else {
             service.updateCartQuantity(req.body.user_id, req.body.id, (parseInt(cartItemQuantity) - 1))
         }
@@ -44,13 +44,13 @@ const removeFromCart = async (req, res) => {
 
 const removeAllItemFromCart = async (req, res) => {
     try {
-        service.deleteCartProduct(req)
+        service.deleteCartProduct(req.body.user_id, req.body.id)
         console.log(req.body)
         var currentIds = await service.getCartProductIds(req.body.user_id)
 
         var index = currentIds.indexOf(req.body.id);
         currentIds.splice(index, 1);
-        service.updateCartProductIds(req, currentIds)
+        service.updateCartProductIds(req.body.user_id, currentIds)
 
         res.status(200).send({ data: null })
     } catch (error) {
@@ -82,13 +82,13 @@ const addToCart = async (req, res) => {
             }
             if (!productInCart) {
                 currentIdsCopy.push(req.body.product_id)  
-                service.updateCartProductIds(req, currentIdsCopy)
+                service.updateCartProductIds(req.body.user_id, currentIdsCopy)
                 service.updateCartQuantity(req.body.user_id, req.body.product_id, 1)
                 service.setCartItemProductId(req.body.user_id, req.body.product_id)
                 
             }
         } else {
-            service.updateCartProductIds(req, [req.body.product_id])
+            service.updateCartProductIds(req.body.user_id, [req.body.product_id])
             service.updateCartQuantity(req.body.user_id, req.body.product_id, 1)
             service.setCartItemProductId(req.body.user_id, req.body.product_id)
             
