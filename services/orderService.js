@@ -2,7 +2,8 @@ var { mysqlClient } = require('../databases/mysqlDB')
 
 const getOrdersOfManagerData = async (req) => {
     try {
-        const response = await mysqlClient.query("SELECT * FROM order_customer ORDER BY order_customer.order_date DESC LIMIT 100;")
+        const response = await mysqlClient.query("SELECT * FROM order_customer WHERE order_customer.order_date <= '$today' ORDER BY order_customer.order_date DESC LIMIT 100;"
+            .replace("$today", (new Date()).toLocaleString()))
         return response
     }
     catch (error) {

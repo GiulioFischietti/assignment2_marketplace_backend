@@ -1,13 +1,6 @@
 const express = require('express')
 require('dotenv').config()
 const app = express();
-const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
-const { json } = require('body-parser');
-
-
-var { redisClient } = require('./databases/redisDB');
-var { mysqlClient } = require('./databases/mysqlDB');
 
 const analyticsController = require('./controllers/analyticsController');
 const productController = require('./controllers/productController');
