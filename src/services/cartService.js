@@ -1,8 +1,7 @@
-const { redisClient } = require('../databases/redisDB')
+const { redisClient } = require('../config/redisDB')
 
 const getCartProductIds = async (user_id) => {
     try {
-        console.log(user_id)
         return await JSON.parse(await redisClient.get("cust:$cust_id:cart_product_ids".replace("$cust_id", user_id)))
     } catch (error) {
         console.log(error)

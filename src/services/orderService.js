@@ -1,4 +1,4 @@
-var { mysqlClient } = require('../databases/mysqlDB')
+var { mysqlClient } = require('../config/mysqlDB')
 
 const getOrdersOfManagerData = async (req) => {
     try {

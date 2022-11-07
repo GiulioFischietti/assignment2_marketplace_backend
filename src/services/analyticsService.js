@@ -1,4 +1,4 @@
-var { mysqlClient } = require('../databases/mysqlDB')
+var { mysqlClient } = require('../config/mysqlDB')
 
 const getBeerAnalytics = async (req) => {
     try {

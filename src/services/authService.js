@@ -1,4 +1,4 @@
-var { mysqlClient } = require('../databases/mysqlDB');
+var { mysqlClient } = require('../config/mysqlDB');
 
 const getManagerByUsernameData = async (req) => {
     try {
@@ -12,7 +12,7 @@ const getManagerByUsernameData = async (req) => {
 
 const getCustomerByUsername = async (req) => {
     try {
-        const response = await mysqlClient.query("select customer.id, user.name, user.password, user.username, user.image_url, customer.user_id, customer.address, customer.country, customer.phone from user INNER join customer on user.id = customer.user_id where user.username = '$username';".replace("$username", req.body.username))
+        const response = await mysqlClient.query("select * from user INNER join customer on user.id = customer.user_id where user.username = '$username';".replace("$username", req.body.username))
         return response
     } catch (error) {
         console.log(error)

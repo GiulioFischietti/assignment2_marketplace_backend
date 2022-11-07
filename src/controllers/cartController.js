@@ -45,7 +45,7 @@ const removeFromCart = async (req, res) => {
 const removeAllItemFromCart = async (req, res) => {
     try {
         service.deleteCartProduct(req.body.user_id, req.body.id)
-        console.log(req.body)
+        
         var currentIds = await service.getCartProductIds(req.body.user_id)
 
         var index = currentIds.indexOf(req.body.id);
@@ -67,6 +67,7 @@ const addToCart = async (req, res) => {
 
         if (!product_in_redis) {
             service.addProductInRedis(req)
+            console.log("not in redis")
         }
 
         if (currentIds != null) {
