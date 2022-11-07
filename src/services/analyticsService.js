@@ -57,7 +57,7 @@ const getMonitorAnalytics = async (req) => {
 const getCustomerAnalytics = async (req) => {
     try {
         return await mysqlClient.query(`
-        SELECT COUNT(order_customer.customer_id) AS order_count, order_customer.customer_id, name, image_url
+        SELECT COUNT(order_customer.customer_id) AS order_count, order_customer.customer_id, name, image_url, created_at, updated_at
         FROM marketplace.order_customer 
         join customer on order_customer.customer_id = customer.id
         join user on customer.user_id = user.id

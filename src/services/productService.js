@@ -90,6 +90,15 @@ const getBookByIdData = async (req) => {
     }
 }
 
+const getProductByIdData = async (req) => {
+    try {
+        return await mysqlClient.query("SELECT * FROM product WHERE id = $product_id".replace("$product_id", req.query.product_id))
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+
 const getBeerByIdData = async (req) => {
     try {
         return await mysqlClient.query("SELECT * FROM product INNER JOIN beer ON product.id = beer.product_id WHERE beer.product_id = $beer_id".replace("$beer_id", req.query.product_id))
@@ -278,6 +287,7 @@ module.exports = {
 
     searchProductsData,
     
+    getProductByIdData,
 
 
 }
