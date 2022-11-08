@@ -1,22 +1,21 @@
-var service = require('../services/productService');
+const { Beer } = require('../models/beer');
+const { Book } = require('../models/book');
+const { Monitor } = require('../models/monitor');
+const { Product } = require('../models/product');
 
 const updateBook = async (req, res) => {
-    const [books] = await service.updateBookData(req)
-    if (books != []) {
-        try {
-            res.send({ "success": true, data: books[0] })
-        } catch (error) {
-            console.log(error)
-            res.status(500).send()
-        }
+    try {
+        await Book.updateBookData(req)
+        res.send({ "success": true, data: null })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
     }
-    else {
-        res.status(403).send({ success: false, data: "User not registered" });
-    }
+
 }
 
 const updateBeer = async (req, res) => {
-    const [beers] = await service.updateBeerData(req)
+    const [beers] = await Beer.updateBeerData(req)
     if (beers != []) {
         try {
             res.send({ "success": true, data: beers[0] })
@@ -32,7 +31,7 @@ const updateBeer = async (req, res) => {
 
 const updateMonitor = async (req, res) => {
     try {
-        const [monitors] = await service.updateMonitorData(req)
+        const [monitors] = await Monitor.updateMonitorData(req)
         res.send({ "success": true, data: monitors[0] })
     } catch (error) {
         console.log(error)
@@ -42,7 +41,7 @@ const updateMonitor = async (req, res) => {
 }
 
 const getBeers = async (req, res, next) => {
-    const [beers] = await service.getBeersData(req)
+    const [beers] = await Beer.getBeersData(req)
     try {
         res.send({ "success": true, data: beers })
     } catch (error) {
@@ -52,7 +51,7 @@ const getBeers = async (req, res, next) => {
 }
 
 const getBooks = async (req, res, next) => {
-    const [books] = await service.getBooksData(req)
+    const books = await Book.getBooksData(req)
     try {
         res.send({ "success": true, data: books })
     } catch (error) {
@@ -62,7 +61,7 @@ const getBooks = async (req, res, next) => {
 }
 
 const getMonitors = async (req, res, next) => {
-    const [monitors] = await service.getMonitorsData(req)
+    const monitors = await Monitor.getMonitorsData(req)
     try {
         res.send({ "success": true, data: monitors })
     } catch (error) {
@@ -72,25 +71,23 @@ const getMonitors = async (req, res, next) => {
 }
 
 const getBookById = async (req, res) => {
-    const [books] = await service.getBookByIdData(req);
-    if (books != []) {
-        try {
-            res.send({ "success": true, data: books[0] })
-        } catch (error) {
-            console.log(error)
-            res.status(500).send()
-        }
-    }
-    else {
-        res.status(403).send({ success: false, data: "User not registered" });
+    try {
+        const book = await Book.getBookByIdData(req);
+        res.send({ "success": true, data: book })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
     }
 }
 
+
+
 const getBeerById = async (req, res) => {
-    const [beers] = await service.getBeerByIdData(req)
-    if (beers != []) {
+    const beer = await Beer.getBeerByIdData(req)
+    console.log(req.query)
+    if (beer != null) {
         try {
-            res.send({ "success": true, data: beers[0] })
+            res.send({ "success": true, data: beer })
         } catch (error) {
             console.log(error)
             res.status(500).send()
@@ -102,27 +99,23 @@ const getBeerById = async (req, res) => {
 }
 
 const getMonitorById = async (req, res) => {
-    const [monitors] = await service.getMonitorByIdData(req)
-    if (monitors != []) {
-        try {
-            res.send({ "success": true, data: monitors[0] })
-        } catch (error) {
-            console.log(error)
-            res.status(500).send()
-        }
+    const monitor = await Monitor.getMonitorByIdData(req)
+    try {
+        res.send({ "success": true, data: monitor })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
     }
-    else {
-        res.status(403).send({ success: false, data: "User not registered" });
-    }
+
 }
 
 const getBooksByBrand = async (req, res) => {
-    const [brands] = await service.getBookBrands()
+    const [brands] = await Book.getBookBrands()
     if (brands != []) {
         try {
             var books = []
             for (let i = 0; i < brands.length; i++) {
-                const [books_by_brand] = await service.getBooksByBrandData(brands[i].brand)
+                const books_by_brand = await Book.getBooksByBrandData(brands[i].brand)
                 books.push({ "brand": brands[i].brand, "books": books_by_brand })
             }
             res.send({ "success": true, data: books })
@@ -137,14 +130,14 @@ const getBooksByBrand = async (req, res) => {
 }
 
 const getMonitorsByBrand = async (req, res) => {
-    const [brands] = await service.getMonitorBrands()
+    const [brands] = await Monitor.getMonitorBrands()
 
     if (brands != []) {
 
         try {
             var monitors = []
             for (let i = 0; i < brands.length; i++) {
-                const [monitors_by_brand] = await service.getMonitorsByBrandData(brands[i].brand)
+                const monitors_by_brand = await Monitor.getMonitorsByBrandData(brands[i].brand)
                 monitors.push({ "brand": brands[i].brand, "monitors": monitors_by_brand })
             }
             res.send({ "success": true, data: monitors })
@@ -159,16 +152,17 @@ const getMonitorsByBrand = async (req, res) => {
 }
 
 const getBeersByBrand = async (req, res) => {
-    const [brands] = await service.getBeerBrands()
+    const [brands] = await Beer.getBeerBrands()
 
     if (brands != []) {
 
         try {
             var beers = []
             for (let i = 0; i < brands.length; i++) {
-                const [beers_by_brand] = await service.getBeersByBrandData(brands[i].brand)
+                const beers_by_brand = await Beer.getBeersByBrandData(brands[i].brand)
                 beers.push({ "brand": brands[i].brand, "beer": beers_by_brand })
             }
+
             res.send({ "success": true, data: beers })
         } catch (error) {
             console.log(error)
@@ -181,12 +175,12 @@ const getBeersByBrand = async (req, res) => {
 }
 
 const getProductsByCategory = async (req, res) => {
-    const [categories] = await service.getProductCategories()
+    const [categories] = await Product.getProductCategories()
     if (categories != []) {
         try {
             var products = []
             for (let i = 0; i < categories.length; i++) {
-                const [products_by_category] = await service.getProductsByCategory(categories[i].category)
+                const products_by_category = await Product.getProductsByCategory(categories[i].category)
                 products.push({ "category": categories[i].category, "products": products_by_category })
             }
             res.send({ "success": true, data: products })
@@ -202,25 +196,27 @@ const getProductsByCategory = async (req, res) => {
 
 const createBeer = async (req, res) => {
     try {
-        service.createBeerData(req)
+        Beer.createBeerData(req)
         res.send({ "success": true, data: null })
     } catch (error) {
         console.log(error)
         res.status(500).send()
     }
 }
+
 const createMonitor = async (req, res) => {
     try {
-        service.createMonitorData(req)
+        Monitor.createMonitorData(req)
         res.send({ "success": true, data: null })
     } catch (error) {
         console.log(error)
         res.status(500).send()
     }
 }
+
 const createBook = async (req, res) => {
     try {
-        service.createBookData(req)
+        Book.createBookData(req)
         res.send({ "success": true, data: null })
     } catch (error) {
         console.log(error)
@@ -229,7 +225,7 @@ const createBook = async (req, res) => {
 }
 
 const searchProducts = async (req, res) => {
-    const products = await service.searchProductsData(req)
+    const products = await Product.searchProductsData(req)
     if (products != []) {
         try {
             res.send({ "success": true, data: products })

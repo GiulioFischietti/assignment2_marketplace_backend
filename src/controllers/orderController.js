@@ -1,19 +1,21 @@
-const orderService = require('../services/orderService');
-const cartService = require('../services/cartService')
+const { Cart } = require('../models/cart');
+const { Order } = require('../models/order');
+const { ProductOrder } = require('../models/product_order');
 
 const getOrdersOfManager = async (req, res) => {
-    const [orders] = await orderService.getOrdersOfManagerData(req)
-        try {
-            res.send({ "success": true, data: orders })
-        } catch (error) {
-            console.log(error)
-            res.status(500).send()
-        }
+    const orders = await Order.getOrdersOfManagerData(req)
+    try {
+        console.log(orders)
+        res.send({ "success": true, data: orders })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send()
+    }
 }
 
 const updateStatusOrder = async (req, res) => {
     try {
-        await orderService.updateStatusOrderData(req)
+        await Order.updateStatusOrderData(req)
         res.status(200).send({ success: true })
     } catch (error) {
         console.log(error)
@@ -23,7 +25,7 @@ const updateStatusOrder = async (req, res) => {
 
 const getOrdersOfUser = async (req, res) => {
 
-    const [orders] = await orderService.getOrdersOfUserData(req)
+    const orders = await Order.getOrdersOfUserData(req)
     if (orders != []) {
         try {
             res.send({ "success": true, data: orders })
@@ -39,8 +41,8 @@ const getOrdersOfUser = async (req, res) => {
 
 const getOrderDetails = async (req, res) => {
     try {
-        const [orders] = await orderService.getOrderDetailsData(req)
-        res.send({ "success": true, data: orders })
+        const orderDetails = await ProductOrder.getOrderDetailsData(req)
+        res.send({ "success": true, data: orderDetails })
     } catch (error) {
         console.log(error)
         res.status(500).send()
@@ -50,13 +52,13 @@ const getOrderDetails = async (req, res) => {
 
 const createOrder = async (req, res) => {
     try {
-        orderService.createOrderData(req)
-        var currentIds = await cartService.getCartProductIds(req.body.id)
+        Order.createOrderData(req)
+        var currentIds = await Cart.getCartProductIds(req.body.id)
         for (let i = 0; i < currentIds.length; i++) {
-            cartService.deleteCartProduct(req.body.id, currentIds[i])
+            Cart.deleteCartProduct(req.body.id, currentIds[i])
         }
-        cartService.updateCartProductIds(req.body.id, [])
-        
+        Cart.updateCartProductIds(req.body.id, [])
+
         res.send({ "success": true, data: null })
     } catch (error) {
         console.log(error)

@@ -74,7 +74,7 @@ const getCustomerAnalytics = async (req) => {
 const getExpencesAnalytics = async (req) => {
     try {
         return await mysqlClient.query(`
-        SELECT SUM(order_customer.total) AS order_total, order_customer.customer_id, name, image_url
+        SELECT SUM(order_customer.total) AS order_total, order_customer.customer_id, name, image_url, created_at, updated_at
         FROM marketplace.order_customer 
         join customer on order_customer.customer_id = customer.id
         join user on customer.user_id = user.id

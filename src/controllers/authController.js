@@ -1,12 +1,13 @@
-var service = require('../services/authService');
 const bcrypt = require('bcrypt');
+const { Customer } = require('../models/customer');
+const { Manager } = require('../models/manager');
 
 const logInAsManager = async (req, res) => {
-    const [user] = await service.getManagerByUsernameData(req)
-    if (user.length != 0) {
+    const managers = await Manager.getManagerByUsernameData(req)
+    if (managers.length != 0) {
         try {
-            if (await bcrypt.compare(req.body.password, user[0].password))
-                res.send({ "success": true, data: user[0] })
+            if (await bcrypt.compare(req.body.password, managers[0].password))
+                res.send({ "success": true, data: managers[0] })
             else res.status(403).send({ "success": false, data: "Wrong username/password" })
         } catch (error) {
             console.log(error)
@@ -21,12 +22,12 @@ const logInAsManager = async (req, res) => {
 
 const signUpAsManager = async (req, res) => {
     try {
-        const [users] = await service.getManagerByUsernameData(req)
+        const [users] = await Manager.getManagerByUsernameData(req)
 
         if (users.length == 0) {
             const hashedPassword = await bcrypt.hash(req.body.password, 10)
-            const response = await service.createManagerData(req, hashedPassword)
-            const [user] = await service.getManagerByUsernameData(req)
+            const response = await Manager.createManagerData(req, hashedPassword)
+            const [user] = await Manager.getManagerByUsernameData(req)
             res.status(200).send({ success: true, data: user[0] });
         }
         else {
@@ -38,8 +39,9 @@ const signUpAsManager = async (req, res) => {
         res.status(500).send({ success: false, data: error })
     }
 }
+
 const logIn = async (req, res) => {
-    const [user] = await service.getCustomerByUsername(req)
+    const user = await Customer.getCustomerByUsername(req)
     if (user != []) {
         try {
             if (await bcrypt.compare(req.body.password, user[0].password))
@@ -57,11 +59,11 @@ const logIn = async (req, res) => {
 
 const signUp = async (req, res) => {
     try {
-        const [users] = await service.getCustomerByUsername(req)
+        const users = await Customer.getCustomerByUsername(req)
         if (users.length == 0) {
             const hashedPassword = await bcrypt.hash(req.body.password, 10)
-            await service.createCustomer(req, hashedPassword)
-            const [user] = await service.getCustomerByUsername(req)
+            await Customer.createCustomer(req, hashedPassword)
+            const [user] = await Customer.getCustomerByUsername(req)
             res.status(200).send({ success: true, data: user[0] });
         }
         else {
@@ -75,8 +77,8 @@ const signUp = async (req, res) => {
 
 const updateCustomer = async (req, res) => {
     try {
-        await service.updateCustomer(req)
-        const [user] = await service.getCustomerByUsername(req)
+        await Customer.updateCustomer(req)
+        const [user] = await Customer.getCustomerByUsername(req)
         res.send({ "success": true, data: user[0] })
     } catch (error) {
         console.log(error)
